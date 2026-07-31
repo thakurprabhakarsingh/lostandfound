@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lost & Found Portal</title>
+<style>
+  body { margin:0; font-family:sans-serif; background: linear-gradient(to bottom, #f0f9ff, #ffffff); color:#1e293b; }
+  .container { max-width:1200px; margin:0 auto; padding:20px; }
+
+  /* Hero */
+  header { display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; background:#0284c7; color:white; padding:20px; border-radius:16px; }
+  header h1 { margin:0; font-size:28px; }
+  header p {margin:4px 0 0; font-size:16px; color:white; opacity:0.8; }
+  header .badge { font-size:14px; opacity:0.9; }
+
+  /* Tabs */
+  button { cursor:pointer; border:none; border-radius:8px; padding:8px 16px; font-weight:bold; transition:0.2s; }
+  .tab-btn.active { background:#0369a1; color:white; }
+  .tab-btn { background:#e0f2fe; color:#0369a1; }
+
+  /* Form section */
+  .form-section, .reports-section { background:white; border-radius:16px; padding:20px; box-shadow:0 4px 12px rgba(0,0,0,0.05); margin-bottom:20px; }
+  input, select, textarea { width:100%; padding:8px 10px; margin-bottom:10px; border-radius:8px; border:1px solid #cbd5e1; font-size:14px; }
+  textarea { resize:none; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .flex { display:flex; gap:10px; align-items:center; }
+
+  /* Buttons */
+  .btn-primary { background:#0284c7; color:white; }
+  .btn-secondary { background:#e0f2fe; color:#0369a1; }
+  .btn-danger { background:#dc2626; color:white; }
+  .btn-small { padding:4px 8px; font-size:12px; border-radius:6px; }
+
+  /* Reports */
+  .report { display:flex; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden; margin-bottom:16px; transition:0.2s; }
+  .report:hover { transform:scale(1.01); }
+  .report img { width:160px; height:140px; object-fit:cover; }
+  .report-content { padding:12px; flex:1; display:flex; flex-direction:column; justify-content:space-between; }
+  .report-header { font-size:13px; color:#64748b; margin-bottom:4px; }
+  .report-title { font-weight:bold; font-size:17px; margin:4px 0; }
+  .report-desc { font-size:14px; color:#475569; }
+  .report-footer { display:flex; justify-content:space-between; align-items:center; margin-top:8px; }
+  .trust { font-weight:bold; }
+  .trust.high { color:#16a34a; }
+  .trust.medium { color:#d97706; }
+  .trust.low { color:#dc2626; }
+
+  footer { text-align:center; font-size:12px; color:#64748b; margin-top:20px; }
+  .image-preview { width:100px; height:100px; object-fit:cover; border-radius:8px; margin-top:8px; border:1px solid #cbd5e1; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div>
+      <h1>Lost & Found Portal</h1>
+      <p>A trusted space for the community to report lost and found items.</p>
+    </div>
+    <div class="badge">Secure • Verified posts • Moderated</div>
+  </header>
+
+  <div class="grid-2">
+
+    <div class="form-section">
+      <div class="flex">
+        <button class="tab-btn active" data-tab="found">I Found Something</button>
+        <button class="tab-btn" data-tab="lost">I Lost Something</button>
+      </div>
+
+      <form id="reportForm">
+        <input type="hidden" id="reportType" value="found">
+
+        <div class="grid-2">
+          <input type="text" id="firstName" placeholder="Your first name" required>
+          <select id="role">
+            <option>Student</option>
+            <option>Faculty</option>
+            <option>Staff</option>
+          </select>
+        </div>
+
+        <input type="text" id="title" placeholder="Item (e.g., Blue Wallet)" required>
+        <input type="text" id="location" placeholder="Found/Lost at (location)" required>
+        <textarea id="desc" placeholder="Description (optional)" rows="3"></textarea>
+        <div class="grid-2">
+          <input type="date" id="date" required>
+          <input type="text" id="contact" placeholder="Contact (email or phone)" required>
+        </div>
+
+        <div style="border:2px dashed #cbd5e1; border-radius:8px; padding:10px; text-align:center; margin-bottom:10px;">
+          <input type="file" id="imageUpload" accept="image/*"><br>
+          <img id="preview" src="" alt="preview" class="image-preview" style="display:none;">
+        </div>
+
+        <div class="flex" style="justify-content:space-between;">
+          <button type="reset" class="btn-secondary">Reset</button>
+          <button type="submit" class="btn-primary">Post</button>
+        </div>
+
+        <p style="font-size:12px; color:#64748b; margin-top:8px;">Reports are visible to the community. Found items that match lost items can be closed to hide them.</p>
+      </form>
+    </div>
+
+    <div class="reports-section">
+      <div class="flex" style="margin-bottom:12px;">
+        <input type="text" id="searchQuery" placeholder="Search by item, location or name" style="flex:1; padding:8px; border-radius:8px; border:1px solid #cbd5e1;">
+        <select id="filterSelect">
+          <option value="all">All Active</option>
+          <option value="reported">Reported</option>
+        </select>
+        <select id="sortSelect">
+          <option value="dateDesc">Newest</option>
+          <option value="dateAsc">Oldest</option>
+          <option value="trust">Trust score</option>
+        </select>
+      </div>
+
+      <div id="reportsContainer"></div>
+    </div>
+
+  </div>
+
+  <footer>
+    © <span id="year"></span> Lost & Found Portal — Built for transparency and safety. Privacy • Terms
+  </footer>
+
+</div>
+
+<script>
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzlFFPmMOmyrQrT428ZDFGpLHLF-quivMSH1iwC_haPiiJQyk9phOFNCp1nL30cOXHMVQ/exec'; // Yahan apna Google Apps Script ka URL dalein
+let reports = [];
+
+// Google Sheet se data laane ke liye
+async function fetchReports() {
+  try {
+    const response = await fetch(WEB_APP_URL);
+    reports = await response.json();
+    renderReports();
+  } catch (err) {
+    console.error('Error fetching data:', err);
+    document.getElementById('reportsContainer').innerHTML = '<p style="text-align:center; color:red;">Failed to load reports from database.</p>';
+  }
+}
+
+function uid(prefix=''){ return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+const reportForm = document.getElementById('reportForm');
+const preview = document.getElementById('preview');
+const imageUpload = document.getElementById('imageUpload');
+let currentTab = 'found';
+document.getElementById('year').innerText = new Date().getFullYear();
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    currentTab = btn.dataset.tab;
+    document.getElementById('reportType').value = currentTab;
+    document.getElementById('title').placeholder = currentTab==='found' ? 'Item (e.g., Blue Wallet)' : 'Item you lost (e.g., Silver Ring)';
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// Image preview
+imageUpload.addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(file){
+    const reader = new FileReader();
+    reader.onload = ev=>{
+      preview.src = ev.target.result;
+      preview.style.display='block';
+    };
+    reader.readAsDataURL(file);
+  } else { preview.src=''; preview.style.display='none'; }
+});
+
+// Submit form
+reportForm.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const newR = {
+    id: uid(currentTab+'-'),
+    type: currentTab,
+    firstName: document.getElementById('firstName').value,
+    role: document.getElementById('role').value,
+    title: document.getElementById('title').value,
+    desc: document.getElementById('desc').value,
+    location: document.getElementById('location').value,
+    date: document.getElementById('date').value,
+    contact: document.getElementById('contact').value,
+    imageData: preview.src || '',
+    verified: false,
+    reported: false,
+    foundStatus: false, // Item milne par true ho jayega aur hide ho jayega
+    createdAt: new Date().toISOString()
+  };
+
+  reports.unshift(newR);
+  renderReports();
+  reportForm.reset();
+  preview.src=''; preview.style.display='none';
+
+  await fetch(WEB_APP_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'add', report: newR })
+  });
+  fetchReports();
+});
+
+function trustScore(r){
+  let s = r.verified ? 85 : 50;
+  if(r.role==='Faculty') s+=5;
+  if(r.reported) s-=30;
+  return Math.min(Math.max(s,0),100);
+}
+
+// Render reports (Jo items found/resolved ho chuke hain, unhe filter out kar diya hai)
+function renderReports(){
+  const container = document.getElementById('reportsContainer');
+  
+  // Sirf wohi items dikhegenge jinka foundStatus true nahi hai (yani jo abhi tak nahi mile)
+  let list = reports.filter(r => !r.foundStatus);
+
+  const query = document.getElementById('searchQuery').value.toLowerCase();
+  if(query) list = list.filter(r => (r.title+' '+r.desc+' '+r.location+' '+r.firstName).toLowerCase().includes(query));
+  
+  const filter = document.getElementById('filterSelect').value;
+  if(filter==='reported') list = list.filter(r=>r.reported);
+
+  const sortBy = document.getElementById('sortSelect').value;
+  if(sortBy==='dateDesc') list.sort((a,b)=> new Date(b.date)-new Date(a.date));
+  if(sortBy==='dateAsc') list.sort((a,b)=> new Date(a.date)-new Date(b.date));
+  if(sortBy==='trust') list.sort((a,b)=> trustScore(b)-trustScore(a));
+
+  container.innerHTML='';
+  if(list.length===0){ container.innerHTML='<p style="text-align:center; color:#64748b;">No active reports found. All items might have been found!</p>'; return; }
+
+  list.forEach(r=>{
+    const div = document.createElement('div');
+    div.className='report';
+    div.innerHTML = `
+      <div>
+        ${r.imageData ? `<img src="${r.imageData}" alt="${r.title}">` : '<div style="width:160px;height:140px;background:#e2e8f0;"></div>'}
+      </div>
+      <div class="report-content">
+        <div>
+          <div class="report-header">${r.type==='found'?'Found':'Lost'} • ${r.role} • Posted by ${r.firstName}</div>
+          <div class="report-title">${r.title} ${r.verified ? '<span style="background:#bae6fd; color:#0369a1; font-size:12px; padding:2px 4px; border-radius:4px;">Verified</span>' : ''}</div>
+          <div class="report-desc">${r.desc || 'No description'}</div>
+        </div>
+        <div class="report-footer">
+          <div>
+            <a href="mailto:${r.contact}" style="color:#0284c7; font-size:14px;">Contact</a>
+            <button onclick="markAsFound('${r.id}')" class="btn-small btn-primary" style="background:#16a34a; margin-left: 5px;">Mark as Found</button>
+          </div>
+          <div>
+            ${!r.verified ? `<button onclick="toggleVerify('${r.id}')" class="btn-small btn-primary">Verify</button>` : ''}
+            <button onclick="removeReport('${r.id}')" class="btn-small btn-danger">Remove</button>
+          </div>
+        </div>
+        <div style="margin-top:4px; font-size:12px;">Date: ${r.date} | Trust: <span class="trust ${trustScore(r)>75?'high':trustScore(r)>40?'medium':'low'}">${trustScore(r)}</span></div>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// Item ko "Found" mark karke app se hide karne ke liye function
+async function markAsFound(id){
+  if(confirm('Kya yeh item mil gaya hai? Yeh ab app mein nahi dikhega.')){
+    reports = reports.map(r=> {
+      if(r.id === id) {
+        r.foundStatus = true;
+        updateSheetStatus(id, 'foundStatus', true);
+      }
+      return r;
+    });
+    renderReports();
+  }
+}
+
+async function removeReport(id){
+  if(confirm('Delete this report?')){
+    reports = reports.filter(r=>r.id!==id);
+    renderReports();
+    await fetch(WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'delete', id: id })
+    });
+    fetchReports();
+  }
+}
+
+async function toggleVerify(id){
+  reports = reports.map(r=> {
+    if(r.id === id) {
+      r.verified = !r.verified;
+      updateSheetStatus(id, 'verified', r.verified);
+    }
+    return r;
+  });
+  renderReports();
+}
+
+async function updateSheetStatus(id, field, value) {
+  await fetch(WEB_APP_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'updateStatus', id: id, field: field, value: value })
+  });
+}
+
+document.getElementById('searchQuery').addEventListener('input', renderReports);
+document.getElementById('filterSelect').addEventListener('change', renderReports);
+document.getElementById('sortSelect').addEventListener('change', renderReports);
+
+fetchReports();
+</script>
+</body>
+</html>
